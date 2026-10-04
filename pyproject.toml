@@ -1,0 +1,21 @@
+[project]
+name = "fast-api-rag-hepmate"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "1MAGNOVA", email = "olalekanabsm@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "chromadb>=1.5.9",
+    "fastapi>=0.142.2",
+    "uvicorn>=0.54.0",
+]
+
+[project.scripts]
+fast-api-rag-hepmate = "fast_api_rag_hepmate:main"
+
+[build-system]
+requires = ["uv_build>=0.12.23,<0.13.0"]
+build-backend = "uv_build"
