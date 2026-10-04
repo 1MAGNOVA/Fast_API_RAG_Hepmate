@@ -40,14 +40,14 @@ def ask(question: str): #fastapi will read the question directly from the query 
 
                 Question: {question}"""
 
-                    # Step 3: GENERATE - send the augmented prompt to the local LLM
-                    response = ollama.chat(
+    # Step 3: GENERATE - send the augmented prompt to the local LLM
+    response = ollama.chat(
                         model="qwen2.5:0.5b",
-                        messages=[{"role": "user", "content": augmented_prompt}],
+                        messages=[{"role": "user", "content": aug_prompt}],
                     )
 
-                    # Return the answer along with the context so users can verify the source
-                    return {
+    # Return the answer along with the context so users can verify the source
+    return {
                         "question": question,
                         "answer": response["message"]["content"],
                         "context_used": results["documents"][0],
