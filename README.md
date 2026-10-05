@@ -31,26 +31,31 @@ the model as an interchangeable component sitting on top.
 
 ## Architecture
 
-```
-                      build time                     request time
-                      ------------                    -----------
-knowledge_base.txt ──► build_knowledge_base.py ──► chroma_db/  (PersistentClient)
-  34 chunks             paragraph split              chroma.sqlite3
-  37 sources            nomic-embed-text              collection: Hepmate_questions
-  12 test questions            │                            │
-  confidence + refresh         │                     GET /ask?question=...
-  metadata                    ▼                            ▼
-                        Ollama :11434  ◄───── nomic-embed-text (embed query)
-                                                        │
-                                          top-2 chunks + distances
-                                                        │
-                                          augmented prompt (chunks + question)
-                                                        │
-                                                        ▼
-                        Ollama :11434  ──► qwen2.5:0.5b ──► answer
-                                                        │
-                                          FastAPI ◄──────┘
-                                          { question, answer, context_used }
+```mermaid
+flowchart TB
+    subgraph BUILD["Build time — run once, or when knowledge_base.txt changes"]
+        direction TB
+        KB["knowledge_base.txt<br/>34 chunks · 37 sources · 12 test questions<br/>SRC / CONF / REFRESH metadata"]
+        INGEST["build_knowledge_base.py<br/>paragraph split on blank lines"]
+        EMB1["Ollama<br/>nomic-embed-text"]
+        CHROMA[("chroma_db/<br/>PersistentClient<br/>chroma.sqlite3<br/>Hepmate_questions")]
+        KB --> INGEST --> EMB1 --> CHROMA
+    end
+
+    subgraph SERVE["Request time — GET /ask?question=..."]
+        direction TB
+        CLIENT["Client"]
+        API["FastAPI<br/>main.py:24"]
+        EMB2["Ollama<br/>nomic-embed-text<br/>embed query"]
+        RETRIEVE["collection.query<br/>n_results=2<br/>chunks + distances"]
+        AUG["Augment<br/>chunks + question → prompt"]
+        LLM["Ollama<br/>qwen2.5:0.5b"]
+        RESP["{ question, answer, context_used }"]
+        CLIENT --> API --> EMB2 --> RETRIEVE --> AUG --> LLM --> RESP
+    end
+
+    CHROMA -.->|"persisted index"| RETRIEVE
+    EMB1 -.->|"shared model"| EMB2
 ```
 
 `context_used` is returned to the caller on purpose. Every answer ships with the text it was
