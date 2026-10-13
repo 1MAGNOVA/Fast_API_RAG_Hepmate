@@ -67,24 +67,6 @@ The knowledge file has 12 test questions in section C, so I ran all 12 against t
 
 Cause: chunk C33 says "copy into the system prompt" and `main.py` never does. The rules go out as a regular user message, so a 0.5b model treats them as content to discuss, not instructions to follow. That's a prompt architecture problem, not a retrieval problem.
 
-## Known bugs
-
-**`main.py` queries an empty collection.** `build_knowledge_base.py:27` writes to `Hepmate_questions`, `main.py:18` reads `hepmate_questions`. Chroma sees two different names, so the app silently creates an empty one, gets zero documents, and answers from memory anyway. That's how it told me hepatitis B has no vaccine. Not fixed yet — the name needs to be a shared constant.
-
-**No empty-retrieval guard.** If `query()` returns `[]` it should refuse without calling the model. Right now the bug above is this bug plus extra steps.
-
-**Chunking ignores my own file format.** `text.split("\n\n")` gives 49 docs, not 34 — it swallows the source registry and the test questions as searchable text. Should parse the `### CHUNK` headers instead.
-
-Also: `n_results` is hardcoded, and there's no test suite or Dockerfile yet.
-
-## Next
-
-- [ ] Fix the collection name
-- [ ] Refuse when retrieval is empty or the best match is far
-- [ ] Move C33/C34 into a system prompt, attach C01 to every answer
-- [ ] Try `qwen2.5:7b` and re-run the 12 questions
-- [ ] Parse chunks from headers
-- [ ] pytest over section C so those numbers can't silently regress
 
 ## Layout
 
