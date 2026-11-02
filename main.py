@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from pydantic import BaseModel
 import ollama 
 import chromadb
 from chromadb.utils.embedding_functions.ollama_embedding_function import (
@@ -52,3 +53,29 @@ def ask(question: str): #fastapi will read the question directly from the query 
                         "answer": response["message"]["content"],
                         "context_used": results["documents"][0],
                     }
+
+class DocumentSubmission(BaseModel):
+    user_name: str # user profile
+    content: str 
+
+
+@app.post("/documents") # this will create an endpoint at /documents for submitting new profiles
+
+def add_document(submission: DocumentSubmission):
+    chunks = [chunk.strip() for chunk in submission.content.split("\n\n")if chunk.strip()]
+
+    collection.add(
+        ids=[f"{submission.user_name}-chunk{i}" for i in range(len(chunks))]
+    )],
+    documents=chunks,
+    metadatas= [
+        {"source": "profile", "user_name": submission.user_name,"chunk_index": i} for i in range(len(chunks))
+        # user_name metadata can help eventually filter user later
+    ],
+    )
+
+    return {
+        "message": f"Added {len(chunks)} chunk for user '{submission.user_name}'.", 
+        "user_name": submission.username,
+        "chunks_added": len(chunks),
+    }
