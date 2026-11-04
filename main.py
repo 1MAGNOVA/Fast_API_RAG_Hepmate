@@ -66,13 +66,13 @@ def add_document(submission: DocumentSubmission):
 
     collection.add(
         ids=[f"{submission.user_name}-chunk{i}" for i in range(len(chunks))]
-    )],
+    ),
     documents=chunks,
     metadatas= [
         {"source": "profile", "user_name": submission.user_name,"chunk_index": i} for i in range(len(chunks))
         # user_name metadata can help eventually filter user later
     ],
-    )
+    
 
     return {
         "message": f"Added {len(chunks)} chunk for user '{submission.user_name}'.", 
