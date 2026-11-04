@@ -1,6 +1,6 @@
 from fastapi import FastAPI
-from pydantic import BaseModel
-import ollama 
+from pydantic import BaseModel  # Pydantic validates incoming request data
+import ollama
 import chromadb
 from chromadb.utils.embedding_functions.ollama_embedding_function import (
     OllamaEmbeddingFunction,
@@ -19,6 +19,12 @@ collection = client.get_or_create_collection(
     name="hepmate_questions", 
     embedding_function=ef,
 )
+
+class DocumentSubmission(BaseModel):
+    user_name: str # user profile
+    content: str 
+
+
 
 @app.get("/ask") # this will create a GET endpoint at /ask
 
@@ -54,28 +60,22 @@ def ask(question: str): #fastapi will read the question directly from the query 
                         "context_used": results["documents"][0],
                     }
 
-class DocumentSubmission(BaseModel):
-    user_name: str # user profile
-    content: str 
-
-
-@app.post("/documents") # this will create an endpoint at /documents for submitting new profiles
 
 def add_document(submission: DocumentSubmission):
-    chunks = [chunk.strip() for chunk in submission.content.split("\n\n")if chunk.strip()]
+        chunks = [chunk.strip() for chunk in submission.content.split("\n\n") if chunk.strip()]
 
-    collection.add(
-        ids=[f"{submission.user_name}-chunk{i}" for i in range(len(chunks))]
-    ),
-    documents=chunks,
-    metadatas= [
-        {"source": "profile", "user_name": submission.user_name,"chunk_index": i} for i in range(len(chunks))
-        # user_name metadata can help eventually filter user later
-    ],
-    
+    # Store each chunk in ChromaDB with the user's name attached as metadata
+        collection.add(
+        ids=[f"{submission.user_name}-chunk{i}" for i in range(len(chunks))],
+        documents=chunks,
+        metadatas=[
+            {"source": "profile", "user_name": submission.user_name, "chunk_index": i}
+            for i in range(len(chunks))  # user_name metadata lets us filter by user later
+        ],
+        )
 
-    return {
-        "message": f"Added {len(chunks)} chunk for user '{submission.user_name}'.", 
-        "user_name": submission.username,
+        return {
+        "message": f"Added {len(chunks)} chunks for user '{submission.user_name}'.",
+        "user_name": submission.user_name,
         "chunks_added": len(chunks),
-    }
+        }
