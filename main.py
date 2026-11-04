@@ -23,7 +23,7 @@ collection = client.get_or_create_collection(
 class DocumentSubmission(BaseModel):
     user_name: str # user profile
     content: str 
-
+@app.post("/document")
 def add_document(submission: DocumentSubmission):
     # Split the submitted profile into chunks by paragraph
     chunks = [chunk.strip() for chunk in submission.content.split("\n\n") if chunk.strip()]
@@ -44,7 +44,6 @@ def add_document(submission: DocumentSubmission):
         "chunks_added": len(chunks),
     }
 
-@app.get("/ask") # this will create a GET endpoint at /ask
 
 
 @app.get("/ask")
