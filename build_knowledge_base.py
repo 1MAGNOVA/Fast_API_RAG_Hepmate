@@ -24,7 +24,7 @@ ef = OllamaEmbeddingFunction(
 
 # Create (or reuse) a collection - like a table in a database
 collection = client.get_or_create_collection(
-    name="Hepmate_questions",
+    name="hepmate_questions",
     embedding_function=ef,  # Tells ChromaDB how to convert text to vectors
 )  
 

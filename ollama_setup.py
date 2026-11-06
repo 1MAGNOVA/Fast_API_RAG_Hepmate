@@ -2,7 +2,15 @@ import platform
 import shutil
 import requests
 
-OLLAMA_MODEL = "nomic-embed-text"
+EMBEDDING_MODEL = "nomic-embed-text"
+GENERATION_MODEL = "qwen2.5:0.5b"
+
+REQUIRED_MODELS = [
+    EMBEDDING_MODEL,
+    GENERATION_MODEL,
+]
+
+OLLAMA_BASE_URL = "http://localhost:11434"
 
 OLLAMA_DOWNLOAD_URLS = {
     "Darwin": "https://ollama.com/download/mac",
@@ -12,7 +20,6 @@ OLLAMA_DOWNLOAD_URLS = {
 
 
 def check_ollama():
-
     system = platform.system()
     architecture = platform.machine()
 
@@ -21,42 +28,53 @@ def check_ollama():
     if not ollama_path:
         return {
             "installed": False,
+            "running": False,
             "system": system,
             "architecture": architecture,
             "download_url": OLLAMA_DOWNLOAD_URLS.get(system),
-            "message": "Ollama is not installed or not available in PATH."
+            "models": {},
+            "message": "Ollama is not installed or not available in PATH.",
         }
 
     try:
         response = requests.get(
-            "http://localhost:11434/api/tags",
-            timeout=5
+            f"{OLLAMA_BASE_URL}/api/tags",
+            timeout=5,
         )
         response.raise_for_status()
 
-        models = response.json().get("models", [])
+        installed_models = {
+            model.get("name", "").split(":")[0]
+            for model in response.json().get("models", [])
+        }
 
-        model_available = any(
-            model.get("name", "").startswith(OLLAMA_MODEL + ":")
-            or model.get("name") == OLLAMA_MODEL
-            for model in models
-        )
+        model_status = {
+            model: model.split(":")[0] in installed_models
+            for model in REQUIRED_MODELS
+        }
+
+        all_models_available = all(model_status.values())
 
         return {
             "installed": True,
             "running": True,
-            "model_available": model_available,
-            "model": OLLAMA_MODEL,
+            "system": system,
+            "architecture": architecture,
+            "models": model_status,
+            "all_models_available": all_models_available,
             "message": (
-                "Ollama is ready."
-                if model_available
-                else "Ollama is running, but the embedding model is missing."
-            )
+                "Ollama and all required models are ready."
+                if all_models_available
+                else "Ollama is running, but one or more required models are missing."
+            ),
         }
 
     except requests.RequestException:
         return {
             "installed": True,
             "running": False,
-            "message": "Ollama is installed but its local service is unavailable."
+            "system": system,
+            "architecture": architecture,
+            "models": {},
+            "message": "Ollama is installed but its local service is unavailable.",
         }
